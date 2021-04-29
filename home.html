@@ -34,10 +34,21 @@
 				font-weight: bold;
 				border: 2px solid white;
 				border-radius: 5px;
+				margin-right: 2px; 
 			}
-			.parity {
+			.parity, .error {
 				border: 3px solid #ffc107 !important;
 				/* border: 3px solid rgb(255, 255, 70) !important; */
+			}
+			/* Chrome, Safari, Edge, Opera */
+			input::-webkit-outer-spin-button,
+			input::-webkit-inner-spin-button {
+			-webkit-appearance: none;
+			margin: 0;
+			}
+			/* Firefox */
+			input[type=number] {
+			-moz-appearance: textfield;
 			}
         </style>
 	</head>
@@ -45,7 +56,7 @@
 		
 		<div id="container">
 			<template v-if="step == 1">
-				<h3 style="text-align: center">THE HAMMING CODE</h3>
+				<h3 style="text-align: center">THE HAMMING CODE</h3><br>
 			    <div class="form-group">
 			        <h5><label for="txt">Data word:</label></h5>
 			        <input type="text" class="form-control" v-model="dataword"
@@ -66,8 +77,8 @@
 				<button 
 					@click="goBack()"
 					class="btn btn-warning float-right">Back</button><br><br><hr>
-				<h3>SEND TO RECEIVER</h3>
-				<p style="font-size: 32px;">You may flip one of the bits below and tap send button!</p>
+				<h3 style="color: #28a745;">SEND TO RECEIVER FOR DECODING</h3>
+				<p style="font-size: 32px;">Flip atmost one bit below and tap send button!</p>
 				<transmission 
 					:codeword="codeword"
 					@send="decode"></transmission>
@@ -93,7 +104,7 @@
 						:error-position="errorPosition"></receiver><br>
 					
 					<!-- Display the correct dataword -->
-					<h3 class="">Correct Dataword</h3>
+					<h3 class="">Extracted Dataword</h3>
 					<div style='display: flex'>
 						<div class='bg-primary parity-block'
 							v-for='(bit, index) in correctDataword'
@@ -140,14 +151,16 @@
 			Vue.component('transmission', {
 			  props: ["codeword"],
 			  template: "<div>" +
-							"<input type='text' size=1 " +
-								"style='padding-left: 10px; padding-top: 10px; padding-bottom: 10px;' " + 
-								"v-for='bit, index in codeToSend'" +
-								":key='index'" +
-								":value='bit' @input='updateCodeToSend($event, index)'>" +
-							"<br>" +
-							"<button class='btn btn-primary float-right' " +
-								"@click='send()'>Send</button>" +
+							"<form @submit.prevent='send()'>" +
+								"<input type='number' size=1 min=0 max=1 " +
+									"style='padding: 10px 0 10px 10px; margin-right: 2px;' " +
+									"v-for='bit, index in codeToSend' " +
+									":key='index' " +
+									":value='bit' @input='updateCodeToSend($event, index)' required>" +
+								"<br>" +
+								"<button class='btn btn-primary float-right' " +
+									"type='submit'>Send</button>" +
+							"</form>" +
 						"</div>",
 			  created: function () {
 				this.codeToSend = this.codeword
@@ -173,7 +186,7 @@
 						"<div class='bg-primary parity-block'"+
 								"v-for='(bit, index) in code'"+
 								":key='index'"+
-								":class='{parity: isErrorPosition(index)}'"+
+								":class='{error: isErrorPosition(index)}'"+
 							">{{bit}}</div>"+
 					"</div>",
 			    methods: {
@@ -227,16 +240,22 @@
 			  },
 			  methods: {
 			  	goBack: function () {
-			  		return this.step--
+					if(this.step == 3) {
+						this.dataword = ""
+						this.receivedCodeword = []
+						this.errorPosition = 0
+						this.correctedCodeword = []
+						this.correctDataword = []
+					}
+					this.step = 1
 			  	},
 			  	goNext: function () {
-			  		return this.step++ 
+			  		this.step++ 
 			  	},
 			  	encode: function () {
 			  		this.goNext()
 			  	},
 				decode: function (payload) {
-					this.goNext()
 					this.errorPosition = locate_error_position(payload, this.numParity)
 					this.receivedCodeword = payload
 
@@ -262,6 +281,9 @@
 						}
 
 					}
+
+					this.goNext()
+
 				}  
 			  }
 			})
