@@ -1,5 +1,6 @@
 <html>
 	<head>
+		<meta charset="utf-8">
 		<title>Hamming Code</title>
 		<link rel="stylesheet" href="css/bootstrap.min.css">
 		<script src="js/jquery.js"></script>
@@ -58,9 +59,9 @@
 			<template v-if="step == 1">
 				<h3 style="text-align: center">THE HAMMING CODE</h3><br>
 			    <div class="form-group">
-			        <h5><label for="txt">Data word:</label></h5>
+			        <h5><label for="txt">Data word (In Binary):</label></h5>
 			        <input type="text" class="form-control" v-model="dataword"
-					       placeholder="Data word" id="txt" required>
+					       placeholder="Binary" id="txt" required>
 			    </div>
 			    <div>
 			        <button 
@@ -102,16 +103,16 @@
 					<receiver 
 						:code="correctedCodeword"
 						:error-position="errorPosition"></receiver><br>
-					
-					<!-- Display the correct dataword -->
-					<h3 class="">Extracted Dataword</h3>
-					<div style='display: flex'>
-						<div class='bg-primary parity-block'
-							v-for='(bit, index) in correctDataword'
-							key='index'>{{bit}}</div>
-					</div>
 
 				</div><br>
+
+				<!-- Display extracted dataword -->
+				<h3 class="">Extracted Dataword</h3>
+				<div style='display: flex'>
+					<div class='bg-primary parity-block'
+						v-for='(bit, index) in extractedDataword'
+						key='index'>{{bit}}</div>
+				</div>
 				
 				<button 
 					@click="goBack()"
@@ -124,14 +125,14 @@
 		    // Define a new component called encoder
 			Vue.component('encoder', {
 			  props: ["numParity", "codeword"],
-			  template: "<div><h3>CODEWORD</h3>"+
+			  template: "<div><h3>CODEWORD</h3><br>"+
 			  	"<h5>There will be {{ numParity }} parity bits!</h5>"+
 					  "<div style='display: flex'>"+
 						"<div class='bg-primary parity-block'"+
-								"v-for='(bit, index) in codeword'"+
-								":key='index'"+
-								":class='{parity: isParityBit(index)}'"+
-							">{{isParityBit(index) ? 'P' : bit}}</div>"+
+							"v-for='(bit, index) in codeword'"+
+							":key='index'"+
+							":class='{parity: isParityBit(index)}'"+
+							"v-html='parityBit(bit, index)'></div>"+
 					"</div><br>"+
 					"<div style='display: flex'>"+
 						"<div class='bg-primary parity-block'"+
@@ -144,6 +145,13 @@
 			  methods: {
 				isParityBit: function(index) {
 					return Number.isInteger(Math.log2(index + 1))
+				},
+				parityBit: function(bit, index) {
+					if(this.isParityBit(index)) {
+						pos = index + 1
+						return "P<sub>" + pos + "</sub>"
+					}
+					return bit
 				}
 			  }
 			})
@@ -204,7 +212,7 @@
 				receivedCodeword: [],
 				errorPosition: 0,
 				correctedCodeword: [],
-				correctDataword: []
+				extractedDataword: []
 			  },
 			  computed: {
 				bits: function () {
@@ -245,7 +253,7 @@
 						this.receivedCodeword = []
 						this.errorPosition = 0
 						this.correctedCodeword = []
-						this.correctDataword = []
+						this.extractedDataword = []
 					}
 					this.step = 1
 			  	},
@@ -270,16 +278,17 @@
 							temp[this.errorPosition - 1] = 0
 						}
 						this.correctedCodeword = temp
+					} else {
+						this.correctedCodeword = this.receivedCodeword
+					}
 
-						/* Get the dataword from corrected codeword */
-						index = 0
-						for(i = 0; i < this.correctedCodeword.length; i++) {
-							if(!Number.isInteger(Math.log2(i + 1))) {
-								this.correctDataword[index] = this.correctedCodeword[i]
-								index++
-							}
+					/* Extract dataword */
+					index = 0
+					for(i = 0; i < this.correctedCodeword.length; i++) {
+						if(!Number.isInteger(Math.log2(i + 1))) {
+							this.extractedDataword[index] = this.correctedCodeword[i]
+							index++
 						}
-
 					}
 
 					this.goNext()
